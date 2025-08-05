@@ -130,154 +130,663 @@
 
 
 
+//
+//
+// // frontend/src/App.jsx
+//
+// import React, { useState, useRef, useEffect } from 'react'
+// let ipcRenderer = null
+// try {
+//   // only available inside Electron
+//   ipcRenderer = window.require('electron').ipcRenderer
+// } catch {
+//   ipcRenderer = { on: () => {}, removeListener: () => {} }
+// }
+//
+// // Electron’s IPC in the renderer
+// // const { ipcRenderer } = window.require('electron')
+//
+// export default function App() {
+//   // Recording state
+//   const [recording, setRecording] = useState(false)
+//   // AI answer text
+//   const [answer, setAnswer] = useState('')
+//   // Font size in px
+//   const [fontSize, setFontSize] = useState(14)
+//
+//   // Refs for the MediaRecorder and audio chunks
+//   const mediaRecorderRef = useRef(null)
+//   const chunksRef = useRef([])
+//
+//   // 1) Build and POST the audio to your FastAPI backend,
+//   //    then chain classify → generate, and finally setAnswer
+//   async function processAudioBlob(blob) {
+//     try {
+//       // Transcribe
+//       const form = new FormData()
+//       form.append('file', blob, 'clip.webm')
+//       const transResp = await fetch('http://localhost:8000/transcribe/', {
+//         method: 'POST',
+//         body: form
+//       })
+//       const { text } = await transResp.json()
+//
+//       // Classify
+//       const classResp = await fetch('http://localhost:8000/classify/', {
+//         method: 'POST',
+//         headers: { 'Content-Type': 'application/json' },
+//         body: JSON.stringify({ text })
+//       })
+//       const { category } = await classResp.json()
+//
+//       // Generate
+//       const genResp = await fetch('http://localhost:8000/generate/', {
+//         method: 'POST',
+//         headers: { 'Content-Type': 'application/json' },
+//         body: JSON.stringify({ question: text, category })
+//       })
+//       const { answer: aiAnswer } = await genResp.json()
+//
+//       setAnswer(aiAnswer)
+//     } catch (err) {
+//       console.error('Error during AI pipeline:', err)
+//     }
+//   }
+//
+//   // 2) Called by the button or hotkey to start/stop recording
+//   const handleRecordToggle = async () => {
+//     if (!recording) {
+//       // Start recording
+//       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+//       chunksRef.current = []
+//
+//       const recorder = new MediaRecorder(stream)
+//       mediaRecorderRef.current = recorder
+//
+//       recorder.ondataavailable = e => {
+//         if (e.data.size > 0) chunksRef.current.push(e.data)
+//       }
+//
+//       recorder.onstop = async () => {
+//         const blob = new Blob(chunksRef.current, { type: chunksRef.current[0].type })
+//         // Stop all tracks
+//         stream.getTracks().forEach(track => track.stop())
+//         // Process audio to AI
+//         await processAudioBlob(blob)
+//       }
+//
+//       recorder.start()
+//       setRecording(true)
+//     } else {
+//       // Stop recording & processing
+//       mediaRecorderRef.current.stop()
+//       setRecording(false)
+//     }
+//   }
+//
+//   // 3) Listen for the Electron hotkey event
+// //   useEffect(() => {
+// //     ipcRenderer.on('hotkey:record-toggle', handleRecordToggle)
+// //     return () => {
+// //       ipcRenderer.removeListener('hotkey:record-toggle', handleRecordToggle)
+// //     }
+// //   }, [recording])
+// //     // register once, when the component mounts
+// //    ipcRenderer.on('hotkey:record-toggle', handleRecordToggle)
+// //    return () => {
+// //      ipcRenderer.removeListener('hotkey:record-toggle', handleRecordToggle)
+// //    }
+// //  }, [])
+//
+//      useEffect(() => {
+//        // Register hotkey listener once
+//        ipcRenderer.on('hotkey:record-toggle', handleRecordToggle)
+//        return () => {
+//          // Cleanup on unmount
+//          ipcRenderer.removeListener('hotkey:record-toggle', handleRecordToggle)
+//        }
+//      }, [])  // empty deps: run only once
+//
+//   return (
+//     <div
+//       style={{
+//         WebkitAppRegion: 'drag',
+//         position: 'fixed',
+//         top: 20,
+//         left: 20,
+//         zIndex: 9999
+//       }}
+//     >
+// //       <div style={{ WebkitAppRegion: 'no-drag', background: 'transparent', padding: 10 }}>
+//            <div
+//              style={{
+//                position:      'fixed',
+//                top:           20,
+//                left:          20,
+//                zIndex:        9999,
+//                WebkitAppRegion: 'drag',   // make the whole container draggable
+//                width:         'auto',
+//                height:        'auto',
+//              }}
+//            >
+//         {/* Font-Size Slider */}
+//         <label style={{ display: 'block', marginBottom: 8 }}>
+//           Font size:&nbsp;
+//           <input
+//             type="range"
+//             min="10"
+//             max="24"
+//             value={fontSize}
+//             onChange={e => setFontSize(Number(e.target.value))}
+//           />
+//           &nbsp;{fontSize}px
+//         </label>
+//
+//         {/* Start/Stop Recording Button */}
+//         <button onClick={handleRecordToggle}>
+//           {recording ? 'Stop & Process' : 'Start Recording'}
+//         </button>
+//
+//         {/* AI Answer Card */}
+//         {answer && (
+//           <div
+//             style={{
+//               marginTop: 12,
+//               padding: 12,
+//               border: '1px solid rgba(255,255,255,0.6)',
+//               borderRadius: 8,
+//               background: 'rgba(0,0,0,0.4)',
+//               color: 'white',
+//               maxWidth: '80vw',
+//               maxHeight: '80vh',
+//               resize: 'both',
+//               overflow: 'auto',
+//               fontSize: `${fontSize}px`
+//             }}
+//           >
+//             <h3 style={{ marginTop: 0 }}>AI Answer</h3>
+//             <p>{answer}</p>
+//           </div>
+//         )}
+//       </div>
+//     </div>
+//   )
+// }
 
 
 // frontend/src/App.jsx
+//
+// import React, { useState, useRef, useEffect } from 'react'
+//
+// // Safely grab ipcRenderer only when running inside Electron
+// let ipcRenderer = { on: () => {}, removeListener: () => {} }
+// try {
+//   ipcRenderer = window.require('electron').ipcRenderer
+// } catch {
+//   // not in Electron, so noop
+// }
+//
+// export default function App() {
+//   const [recording, setRecording] = useState(false)
+//   const [answer, setAnswer]       = useState('')
+//   const [fontSize, setFontSize]   = useState(14)
+//
+//   const mediaRecorderRef = useRef(null)
+//   const chunksRef        = useRef([])
+//
+//   // Send audio blob to backend → transcribe → classify → generate
+//   async function processAudioBlob(blob) {
+//     try {
+//       // 1) Transcribe
+//       const form = new FormData()
+//       form.append('file', blob, 'clip.webm')
+//       const transResp = await fetch('http://localhost:8000/transcribe/', {
+//         method: 'POST',
+//         body: form
+//       })
+//       const { text } = await transResp.json()
+//
+//       // 2) Classify
+//       const classResp = await fetch('http://localhost:8000/classify/', {
+//         method: 'POST',
+//         headers: { 'Content-Type': 'application/json' },
+//         body: JSON.stringify({ text })
+//       })
+//       const { category } = await classResp.json()
+//
+//       // 3) Generate
+//       const genResp = await fetch('http://localhost:8000/generate/', {
+//         method: 'POST',
+//         headers: { 'Content-Type': 'application/json' },
+//         body: JSON.stringify({ question: text, category })
+//       })
+//       const { answer: aiAnswer } = await genResp.json()
+//
+//       setAnswer(aiAnswer)
+//     } catch (err) {
+//       console.error('Error in AI pipeline:', err)
+//     }
+//   }
+//
+//   // Toggle recording on/off (button or hotkey)
+//   const handleRecordToggle = async () => {
+//     if (!recording) {
+//       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+//       chunksRef.current = []
+//       const recorder = new MediaRecorder(stream)
+//       mediaRecorderRef.current = recorder
+//
+//       recorder.ondataavailable = e => {
+//         if (e.data.size) chunksRef.current.push(e.data)
+//       }
+//
+//       recorder.onstop = async () => {
+//         const blob = new Blob(chunksRef.current, { type: chunksRef.current[0].type })
+//         stream.getTracks().forEach(t => t.stop())
+//         await processAudioBlob(blob)
+//       }
+//
+//       recorder.start()
+//       setRecording(true)
+//     } else {
+//       mediaRecorderRef.current.stop()
+//       setRecording(false)
+//     }
+//   }
+//
+//   // Listen once for F7 from main process
+//   useEffect(() => {
+//     ipcRenderer.on('hotkey:record-toggle', handleRecordToggle)
+//     return () => {
+//       ipcRenderer.removeListener('hotkey:record-toggle', handleRecordToggle)
+//     }
+//   }, [])  // empty deps → run only on mount
+//
+//   return (
+//     <div
+//       style={{
+//         position:         'fixed',
+//         top:              20,
+//         left:             20,
+//         zIndex:           9999,
+//         WebkitAppRegion:  'drag',    // entire overlay draggable
+//       }}
+//     >
+//       <div style={{ WebkitAppRegion: 'no-drag', padding: 12, background: 'rgba(0,0,0,0.5)', borderRadius: 8 }}>
+//         {/* Font-size slider */}
+//         <label style={{ display: 'block', marginBottom: 8, color: 'white' }}>
+//           Font size:&nbsp;
+//           <input
+//             type="range"
+//             min="10"
+//             max="30"
+//             value={fontSize}
+//             onChange={e => setFontSize(+e.target.value)}
+//           />
+//           &nbsp;{fontSize}px
+//         </label>
+//
+//         {/* Start/Stop button */}
+//         <button
+//           onClick={handleRecordToggle}
+//           style={{ marginBottom: 12, padding: '6px 12px' }}
+//         >
+//           {recording ? 'Stop & Process' : 'Start Recording'}
+//         </button>
+//
+//         {/* AI Answer Card */}
+//         {answer && (
+//           <div
+//             style={{
+//               padding:      12,
+//               background:   'rgba(255,255,255,0.1)',
+//               borderRadius: 6,
+//               color:        'white',
+//               fontSize:     `${fontSize}px`,
+//               maxWidth:     '80vw',
+//               maxHeight:    '80vh',
+//               overflow:     'auto',
+//               resize:       'both',
+//             }}
+//           >
+//             <h3 style={{ marginTop: 0 }}>AI Answer</h3>
+//             <p>{answer}</p>
+//           </div>
+//         )}
+//       </div>
+//     </div>
+//   )
+// }
 
-import React, { useState, useRef, useEffect } from 'react'
-let ipcRenderer = null
-try {
-  // only available inside Electron
-  ipcRenderer = window.require('electron').ipcRenderer
-} catch {
-  ipcRenderer = { on: () => {}, removeListener: () => {} }
-}
+//
+//
+//
+//
+//
+// // frontend/src/App.jsx
+//
+// import React, { useState, useRef, useEffect, useCallback } from 'react'
+//
+// // Safely grab ipcRenderer only inside Electron
+// let ipcRenderer = { on: () => {}, removeListener: () => {} }
+// try {
+//   ipcRenderer = window.require('electron').ipcRenderer
+// } catch {
+//   // not in Electron, noop
+// }
+//
+// export default function App() {
+//   const [recording, setRecording] = useState(false)
+//   const [answer,    setAnswer]    = useState('')
+//   const [fontSize,  setFontSize]  = useState(14)
+//
+//   const mediaRecorderRef = useRef(null)
+//   const chunksRef        = useRef([])
+//
+//   // 1) Sends your audio blob through the AI pipeline
+//   const processAudioBlob = async (blob) => {
+//     try {
+//       // Transcribe
+//       const form = new FormData()
+//       form.append('file', blob, 'clip.webm')
+//       const transResp = await fetch('http://localhost:8000/transcribe/', { method: 'POST', body: form })
+//       const { text } = await transResp.json()
+//
+//       // Classify
+//       const classResp = await fetch('http://localhost:8000/classify/', {
+//         method: 'POST',
+//         headers:{ 'Content-Type': 'application/json' },
+//         body: JSON.stringify({ text })
+//       })
+//       const { category } = await classResp.json()
+//
+//       // Generate
+//       const genResp = await fetch('http://localhost:8000/generate/', {
+//         method: 'POST',
+//         headers:{ 'Content-Type': 'application/json' },
+//         body: JSON.stringify({ question: text, category })
+//       })
+//       const { answer: aiAnswer } = await genResp.json()
+//
+//       setAnswer(aiAnswer)
+//     } catch (err) {
+//       console.error('Error in AI pipeline:', err)
+//     }
+//   }
+//
+//   // 2) start/stop recording
+//   const handleRecordToggle = useCallback(async () => {
+//       console.log('🖥️ Renderer: handleRecordToggle (recording=', recording, ')')
+//     if (!recording) {
+//         console.log('🖥️ Renderer: starting recording')
+//       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+//       chunksRef.current = []
+//
+//       const recorder = new MediaRecorder(stream)
+//       mediaRecorderRef.current = recorder
+//
+//       recorder.ondataavailable = e => {
+//         if (e.data.size) chunksRef.current.push(e.data)
+//       }
+//
+//       recorder.onstop = async () => {
+//         const blob = new Blob(chunksRef.current, { type: chunksRef.current[0].type })
+//         stream.getTracks().forEach(t => t.stop())
+//         await processAudioBlob(blob)
+//       }
+//
+//       recorder.start()
+//       setRecording(true)
+//     } else {
+//         console.log('🖥️ Renderer: stopping recording')
+//       mediaRecorderRef.current.stop()
+//       setRecording(false)
+//     }
+//   }, [recording])
+//
+//   // 3) Register the F7 hotkey listener
+//   useEffect(() => {
+//       console.log('🖥️ Renderer: registering hotkey listener')
+//     ipcRenderer.on('hotkey:record-toggle', handleRecordToggle)
+//     return () => {
+//       ipcRenderer.removeListener('hotkey:record-toggle', handleRecordToggle)
+//     }
+//   }, [handleRecordToggle])
+//
+//   // 4) Fallback window keydown (F7)
+//   useEffect(() => {
+//     const onKeyDown = (e) => {
+//       if (e.key === 'F7') {
+//         console.log('🖥️ Renderer: keydown F7 detected in window')
+//         handleRecordToggle()
+//       }
+//     }
+//     window.addEventListener('keydown', onKeyDown)
+//     return () => window.removeEventListener('keydown', onKeyDown)
+//   }, [handleRecordToggle])
+//
+//
+//   return (
+//     <div
+//       style={{
+//         position:        'fixed',
+//         top:             20,
+//         left:            20,
+//         zIndex:          9999,
+//         width:           '400px',
+//       }}
+//     >
+//       {/* Draggable title bar */}
+//       <div
+//         style={{
+//           WebkitAppRegion: 'drag',
+//           height:          '30px',
+//           width:           '100%',
+//           cursor:          'move',
+//         }}
+//       />
+//
+//       {/* Controls & content */}
+//       <div
+//         style={{
+//           WebkitAppRegion:'no-drag',
+//           background:    'rgba(0,0,0,0.5)',
+//           padding:       '12px',
+//           borderRadius:  '8px',
+//         }}
+//       >
+//         {/* Font-size slider */}
+//         <label style={{ color: 'white', display: 'block', marginBottom: 8 }}>
+//           Font size:&nbsp;
+//           <input
+//             type="range"
+//             min="10"
+//             max="30"
+//             value={fontSize}
+//             onChange={e => setFontSize(Number(e.target.value))}
+//           />
+//           &nbsp;<strong>{fontSize}px</strong>
+//         </label>
+//
+//         {/* Record toggle button */}
+//         <button
+//           onClick={handleRecordToggle}
+//           style={{ marginBottom: 12, padding: '6px 12px' }}
+//         >
+//           {recording ? 'Stop & Process' : 'Start Recording'}
+//         </button>
+//
+//         {/* AI Answer Card */}
+//         {answer && (
+//           <div
+//             style={{
+//               padding:      '12px',
+//               background:   'rgba(255,255,255,0.1)',
+//               borderRadius: '6px',
+//               color:        'white',
+//               fontSize:     `${fontSize}px`,
+//               maxWidth:     '100%',
+//               maxHeight:    '60vh',
+//               overflow:     'auto',
+//               resize:       'both',
+//             }}
+//           >
+//             <h3 style={{ marginTop: 0 }}>AI Answer</h3>
+//             <p>{answer}</p>
+//           </div>
+//         )}
+//       </div>
+//     </div>
+//   )
+// }
 
-// Electron’s IPC in the renderer
-// const { ipcRenderer } = window.require('electron')
+
+
+
+
+
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 
 export default function App() {
-  // Recording state
   const [recording, setRecording] = useState(false)
-  // AI answer text
-  const [answer, setAnswer] = useState('')
-  // Font size in px
-  const [fontSize, setFontSize] = useState(14)
+  const [answer,    setAnswer]    = useState('')
+  const [fontSize,  setFontSize]  = useState(14)
 
-  // Refs for the MediaRecorder and audio chunks
   const mediaRecorderRef = useRef(null)
-  const chunksRef = useRef([])
+  const chunksRef        = useRef([])
 
-  // 1) Build and POST the audio to your FastAPI backend,
-  //    then chain classify → generate, and finally setAnswer
-  async function processAudioBlob(blob) {
+  // 1) Audio → AI pipeline
+  const processAudioBlob = async (blob) => {
     try {
       // Transcribe
       const form = new FormData()
       form.append('file', blob, 'clip.webm')
-      const transResp = await fetch('http://localhost:8000/transcribe/', {
-        method: 'POST',
-        body: form
-      })
-      const { text } = await transResp.json()
+      const { text } = await (await fetch('http://localhost:8000/transcribe/', {
+        method: 'POST', body: form
+      })).json()
 
       // Classify
-      const classResp = await fetch('http://localhost:8000/classify/', {
+      const { category } = await (await fetch('http://localhost:8000/classify/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text })
-      })
-      const { category } = await classResp.json()
+      })).json()
 
       // Generate
-      const genResp = await fetch('http://localhost:8000/generate/', {
+      const { answer: aiAnswer } = await (await fetch('http://localhost:8000/generate/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question: text, category })
-      })
-      const { answer: aiAnswer } = await genResp.json()
+      })).json()
 
       setAnswer(aiAnswer)
     } catch (err) {
-      console.error('Error during AI pipeline:', err)
+      console.error('🚨 AI pipeline error', err)
     }
   }
 
-  // 2) Called by the button or hotkey to start/stop recording
-  const handleRecordToggle = async () => {
+  // 2) Toggle recording
+  const handleRecordToggle = useCallback(async () => {
+    console.log('🔔 Renderer: handleRecordToggle, recording=', recording)
     if (!recording) {
-      // Start recording
+      console.log('▶️ start recording')
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
       chunksRef.current = []
-
       const recorder = new MediaRecorder(stream)
       mediaRecorderRef.current = recorder
 
       recorder.ondataavailable = e => {
-        if (e.data.size > 0) chunksRef.current.push(e.data)
+        if (e.data.size) chunksRef.current.push(e.data)
       }
-
       recorder.onstop = async () => {
         const blob = new Blob(chunksRef.current, { type: chunksRef.current[0].type })
-        // Stop all tracks
-        stream.getTracks().forEach(track => track.stop())
-        // Process audio to AI
+        stream.getTracks().forEach(t => t.stop())
         await processAudioBlob(blob)
       }
-
       recorder.start()
       setRecording(true)
     } else {
-      // Stop recording & processing
+      console.log('⏹️ stop recording')
       mediaRecorderRef.current.stop()
       setRecording(false)
     }
-  }
-
-  // 3) Listen for the Electron hotkey event
-  useEffect(() => {
-    ipcRenderer.on('hotkey:record-toggle', handleRecordToggle)
-    return () => {
-      ipcRenderer.removeListener('hotkey:record-toggle', handleRecordToggle)
-    }
   }, [recording])
+
+  // 3) Listen for F7
+  useEffect(() => {
+    console.log('🔔 Renderer: register hotkey listener')
+    window.electronAPI.onRecordToggle(handleRecordToggle)
+  }, [handleRecordToggle])
 
   return (
     <div
       style={{
-        WebkitAppRegion: 'drag',
         position: 'fixed',
-        top: 20,
-        left: 20,
-        zIndex: 9999
+        top:      20,
+        left:     20,
+        zIndex:   9999,
+
       }}
     >
-      <div style={{ WebkitAppRegion: 'no-drag', background: 'transparent', padding: 10 }}>
-        {/* Font-Size Slider */}
-        <label style={{ display: 'block', marginBottom: 8 }}>
+
+      {/* Drag handle */}
+      <div
+        style={{
+          WebkitAppRegion: 'drag',
+          height:          24,
+          display:        'flex',
+          alignItems:     'center',
+          justifyContent: 'center',
+          color:          'rgba(255,255,255,0.7)',
+          cursor:         'move',
+          userSelect:     'none',
+        }}
+      >
+        ⋮ ⋮ ⋮
+      </div>
+
+      {/* No‐drag content */}
+      <div style={{
+        WebkitAppRegion: 'no-drag',
+        background:      'rgba(0,0,0,0.6)',
+        padding:         12,
+        borderRadius:    8,
+      }}>
+        {/* Font‐size */}
+        <label style={{ color: 'white' }}>
           Font size:&nbsp;
           <input
             type="range"
-            min="10"
-            max="24"
+            min="10" max="30"
             value={fontSize}
-            onChange={e => setFontSize(Number(e.target.value))}
+            onChange={e => setFontSize(+e.target.value)}
           />
-          &nbsp;{fontSize}px
+          &nbsp;<strong>{fontSize}px</strong>
         </label>
 
-        {/* Start/Stop Recording Button */}
-        <button onClick={handleRecordToggle}>
-          {recording ? 'Stop & Process' : 'Start Recording'}
+        {/* Record button */}
+        <button
+          onClick={handleRecordToggle}
+          style={{ margin: '12px 0', padding: '6px 12px' }}
+        >
+          { recording ? 'Stop & Process' : 'Start Recording' }
         </button>
 
-        {/* AI Answer Card */}
+        {/* AI Answer card */}
         {answer && (
-          <div
-            style={{
-              marginTop: 12,
-              padding: 12,
-              border: '1px solid rgba(255,255,255,0.6)',
-              borderRadius: 8,
-              background: 'rgba(0,0,0,0.4)',
-              color: 'white',
-              maxWidth: '80vw',
-              maxHeight: '80vh',
-              resize: 'both',
-              overflow: 'auto',
-              fontSize: `${fontSize}px`
-            }}
-          >
+          <div style={{
+            padding:      12,
+            background:   'rgba(255,255,255,0.1)',
+            borderRadius: 6,
+            color:        'white',
+            fontSize:     `${fontSize}px`,
+//             maxWidth:     '100%',
+            maxHeight:    '60vh',
+            width: '100%',
+            height:'100%',
+            overflow:     'auto',
+            resize:       'both'
+          }}>
             <h3 style={{ marginTop: 0 }}>AI Answer</h3>
             <p>{answer}</p>
           </div>
