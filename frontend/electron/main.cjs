@@ -188,23 +188,17 @@ function createWindow() {
 
 app.on('ready', () => {
   createWindow()
-
-  const ok = globalShortcut.register('CommandOrControl+Shift+P', () => {
-      console.log("✅ Main: CommandOrControl+Shift+P registered")
-       if (win && !win.isDestroyed()) {
-         win.webContents.send('hotkey:record-toggle')
-       }
-     })
-
-//   // Register F7 globally
-//   if (!globalShortcut.register('F7', () => {
-//     console.log('✅ Main: F7 pressed → sending IPC')
-//     if (win && !win.isDestroyed()) {
-//       win.webContents.send('hotkey:record-toggle')
-//     }
-//   })) {
-//     console.error('❌ Main: F7 registration failed')
-//   }
+    // Register Ctrl+H to toggle window visibility
+  const hideOk = globalShortcut.register('Control+H', () => {
+    if (!win || win.isDestroyed()) return
+    if (win.isVisible()) win.hide()
+    else win.show()
+  })
+  if (!hideOk) {
+    console.error('❌ Failed to register Ctrl+H')
+  } else {
+    console.log('✅ Main: Ctrl+H registered for hide/show')
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

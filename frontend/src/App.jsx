@@ -712,11 +712,6 @@ export default function App() {
     }
   }, [recording])
 
-  // 3) Listen for F7
-  useEffect(() => {
-    console.log('🔔 Renderer: register hotkey listener')
-    window.electronAPI.onRecordToggle(handleRecordToggle)
-  }, [handleRecordToggle])
 
   return (
     <div
@@ -782,8 +777,8 @@ export default function App() {
             fontSize:     `${fontSize}px`,
 //             maxWidth:     '100%',
             maxHeight:    '60vh',
-            width: '100%',
-            height:'100%',
+//             width: '100%',
+//             height:'100%',
             overflow:     'auto',
             resize:       'both'
           }}>
