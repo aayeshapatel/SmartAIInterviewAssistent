@@ -160,17 +160,40 @@ const path = require('path')
 
 let win
 
-function createWindow() {
+// function createWindow() {
+//   win = new BrowserWindow({
+//     width: 500,
+//     height: 200,
+//     transparent: true,
+//     frame: false,
+//     alwaysOnTop: true,
+//     level: 'screen-saver',           // Highest level to stay on top of everything
+//     visibleOnAllWorkspaces: true,    // Show on every Space/Desktop
+//     focusable: false,               // Prevents the window from stealing focus
+//     skipTaskbar: true,
+//     hasShadow: false,
+//     resizable: true,
+//     type: 'panel',                  // Makes it a floating panel
+//     webPreferences: {
+//       preload: path.join(__dirname, 'preload.cjs'),
+//       contextIsolation: true,
+//       nodeIntegration: false,
+//     }
+//   })
+  function createWindow() {
   win = new BrowserWindow({
     width: 500,
     height: 200,
     transparent: true,
     frame: false,
     alwaysOnTop: true,
-
+    level: 'screen-saver',           // Highest level to stay on top of everything
+    visibleOnAllWorkspaces: true,    // Show on every Space/Desktop
+    focusable: false,               // Prevents the window from stealing focus
     skipTaskbar: true,
     hasShadow: false,
     resizable: true,
+    type: 'panel',                  // Makes it a floating panel
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
@@ -183,6 +206,7 @@ function createWindow() {
     win.loadURL(devURL)
   } else {
     win.loadFile(path.join(__dirname, '../dist/index.html'))
+    win.setVisibleOnAllWorkspaces(true, { visibleOnFullScreen: true }) //new add
   }
 }
 
