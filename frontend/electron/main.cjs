@@ -214,10 +214,10 @@ function checkScreenSharing() {
 
 app.on('ready', () => {
   createWindow()
-  
+
   // Start checking for screen sharing
   setInterval(checkScreenSharing, 1000)
-  
+
   // Register Ctrl+H to toggle window visibility
   const hideOk = globalShortcut.register('Control+H', () => {
     if (!win || win.isDestroyed()) return
