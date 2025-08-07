@@ -1,28 +1,3 @@
-# from fastapi import APIRouter, UploadFile, File, HTTPException
-# from app.models.transcribe import TranscribeResponse
-# import tempfile
-# import whisper
-#
-# router = APIRouter()
-# # Load a small Whisper model for speed
-# model = whisper.load_model("tiny.en")
-#
-# @router.post("/", response_model=TranscribeResponse)
-# async def transcribe_audio(file: UploadFile = File(...)):
-#     """Accepts an audio file (WAV/MP3), returns the transcribed text."""
-#     try:
-#         content = await file.read()
-#         # Write to temp file
-#         with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as tmp:
-#             tmp.write(content)
-#             tmp.flush()
-#             result = model.transcribe(tmp.name)
-#         text = result.get("text", "").strip()
-#         return TranscribeResponse(text=text)
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
-
-
 # backend/app/api/transcribe.py
 
 from fastapi import APIRouter, UploadFile, File, HTTPException

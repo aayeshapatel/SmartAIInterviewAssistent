@@ -1,17 +1,4 @@
 # from fastapi import FastAPI
-# from app.api import transcribe, classify, generate
-#
-# app = FastAPI(title="SAIIA Backend")
-#
-# app.include_router(transcribe.router, prefix="/transcribe", tags=["Transcribe"])
-# app.include_router(classify.router, prefix="/classify", tags=["Classify"])
-# app.include_router(generate.router, prefix="/generate", tags=["Generate"])
-
-
-
-# backend/app/main.py
-
-# from fastapi import FastAPI
 from fastapi import FastAPI, Request, Form
 
 from fastapi.middleware.cors import CORSMiddleware
