@@ -101,7 +101,7 @@ class AnswerGenerator:
                 "in first person (“I am…”), using concrete examples from their experience."
             )
         elif qt == 'hr':
-            parts.append("Answer briefly and professionally, weaving in the candidate's background.")
+            parts.append("Answer briefly and professionally.") #"weaving in the candidate's background"
         elif qt == 'technical':
             parts.append("Answer with clear technical details and examples, referencing their skills.")
         elif qt == 'behavioral':

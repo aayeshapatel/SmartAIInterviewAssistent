@@ -1,5 +1,5 @@
 // frontend/electron/main.cjs
-const { app, BrowserWindow, globalShortcut, ipcMain, screen } = require('electron')
+const { app, BrowserWindow, globalShortcut, ipcMain, screen,systemPreferences } = require('electron')
 const path = require('path')
 
 let win
@@ -40,6 +40,8 @@ function checkScreenSharing() {
     hasShadow: false,
     resizable: true,
     type: 'panel',                  // Makes it a floating panel
+
+    contentProtection: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
@@ -58,6 +60,17 @@ function checkScreenSharing() {
 
 app.on('ready', () => {
   createWindow()
+
+  systemPreferences.subscribeNotification(
+    'com.apple.screenIsCaptured',
+    () => {
+      if (systemPreferences.isScreenCaptured()) {
+        win.hide()
+      } else {
+        win.show()
+      }
+    }
+  )
 
   // Start checking for screen sharing
   setInterval(checkScreenSharing, 1000)
