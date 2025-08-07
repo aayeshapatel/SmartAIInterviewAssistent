@@ -850,26 +850,21 @@ function MainOverlay() {
 //         body: JSON.stringify({ question: text, category })
 //       })).json()
         // Generate with profile
-        // 1. Load profile from localStorage
-        const stored = localStorage.getItem('candidateProfile')
-        const profile = stored ? JSON.parse(stored) : {}
+        // 1. Fetch the saved profile from your FastAPI server
+         const profileRes = await fetch('http://localhost:8000/api/profile')
+         const profile    = await profileRes.json()
 
-        // 2. Build payload
-        const payload = {
-          question: text,
-          category,
-          profile,        // { resume, role, company }
-        }
+         // 2. Build payload including the fetched profile
+         const payload = { question: text, category, profile }
 
-        // 3. Send to your backend
-        const { answer: aiAnswer } = await (await fetch(
-          'http://localhost:8000/generate/',
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-          }
-        )).json()
+         // 3. Send to your backend generate endpoint
+         const { answer: aiAnswer } = await (
+           await fetch('http://localhost:8000/generate/', {
+             method: 'POST',
+             headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify(payload),
+           })
+         ).json()
 
 
       setAnswer(aiAnswer)
@@ -941,11 +936,17 @@ function MainOverlay() {
       }}>
         {/* **Setup Profile** button */}
          <button
-           onClick={() => window.open('http://localhost:5173/profile-setup', '_blank')}
-           style={{ marginBottom: 12, padding: '6px 12px' }}
-         >
-           Setup Profile
+              onClick={() =>
+                window.open(
+                  'http://localhost:8000/profile-setup',
+                  '_blank',
+                  'width=500,height=600'
+                )
+              }
+            >
+            Setup Profile
          </button>
+
 
         {/* Font‐size slider */}
         <label style={{ color: 'white' }}>

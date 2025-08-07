@@ -1,2 +1,4 @@
 /.venv/
 /frontend/dist-electron/
+/frontend/dist-electron/
+/backend/candidate_profile.json
