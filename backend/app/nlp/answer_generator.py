@@ -158,7 +158,6 @@ class AnswerGenerator:
         except Exception as e:
             self.logger.exception(f"Failed to generate answer: {e}")
             return "Error: could not generate answer."
-
     def _build_prompt(
         self,
         question: str,
@@ -171,31 +170,83 @@ class AnswerGenerator:
         qt = question_type.lower()
         parts = []
 
-        # Add context if enabled
+        # 1) Inject the candidate's resume and target role explicitly
         if self.include_context and profile:
-            ctx = []
-            for key in ["job_role", "company", "experience", "skills"]:
-                if profile.get(key):
-                    ctx.append(f"{key.replace('_',' ').title()}: {profile[key]}")
-            if ctx:
-                parts.append("Context:")
-                parts.extend(ctx)
+            # If you have a free-form resume text:
+            if profile.get("resume"):
+                parts.append("Candidate Resume:")
+                # limit to first 300 chars so prompt isn't enormous
+                parts.append(profile["resume"][:300].strip() + ("..." if len(profile["resume"]) > 300 else ""))
+                parts.append("")
+            # Map your 'role' field into 'Job Role'
+            if profile.get("role"):
+                parts.append(f"Target Job Role: {profile['role']}")
+                parts.append("")
+            # Company remains useful for tailoring language:
+            if profile.get("company"):
+                parts.append(f"Company: {profile['company']}")
                 parts.append("")
 
-        # Use question type label in prompt
+        # 2) Add the question
         label = qt.title()
         question_label = f"Question ({label}): {question.strip().rstrip('?')}?"
         parts.append(question_label)
 
-        # Add guidance based on type
-        if qt == 'hr':
-            parts.append("Answer briefly and professionally.")
+        # 3) Guidance: for strengths questions, be explicit
+        if "strength" in question.lower():
+            parts.append(
+                "Based on the candidate resume above, list the candidate's top 3 strengths "
+                "in first person (“I am…”), using concrete examples from their experience."
+            )
+        elif qt == 'hr':
+            parts.append("Answer briefly and professionally, weaving in the candidate's background.")
         elif qt == 'technical':
-            parts.append("Answer with clear technical details and examples.")
+            parts.append("Answer with clear technical details and examples, referencing their skills.")
         elif qt == 'behavioral':
-            parts.append("Use the STAR method (Situation, Task, Action, Result) in your answer.")
+            parts.append("Use the STAR method (Situation, Task, Action, Result) and reference their experience.")
         else:
-            parts.append("Provide a concise, polite response.")
+            parts.append("Provide a concise, polite response, grounded in the candidate's profile.")
 
-        # Join parts with newlines
-        return "\n".join(parts)
+        return "\n\n".join(parts)
+
+
+    # def _build_prompt(
+    #     self,
+    #     question: str,
+    #     question_type: str,
+    #     profile: Optional[Dict[str, Any]] = None,
+    # ) -> str:
+    #     """
+    #     Build the LLM prompt with optional context and explicit question type labeling.
+    #     """
+    #     qt = question_type.lower()
+    #     parts = []
+    #
+    #     # Add context if enabled
+    #     if self.include_context and profile:
+    #         ctx = []
+    #         for key in ["job_role", "company", "experience", "skills"]:
+    #             if profile.get(key):
+    #                 ctx.append(f"{key.replace('_',' ').title()}: {profile[key]}")
+    #         if ctx:
+    #             parts.append("Context:")
+    #             parts.extend(ctx)
+    #             parts.append("")
+    #
+    #     # Use question type label in prompt
+    #     label = qt.title()
+    #     question_label = f"Question ({label}): {question.strip().rstrip('?')}?"
+    #     parts.append(question_label)
+    #
+    #     # Add guidance based on type
+    #     if qt == 'hr':
+    #         parts.append("Answer briefly and professionally.")
+    #     elif qt == 'technical':
+    #         parts.append("Answer with clear technical details and examples.")
+    #     elif qt == 'behavioral':
+    #         parts.append("Use the STAR method (Situation, Task, Action, Result) in your answer.")
+    #     else:
+    #         parts.append("Provide a concise, polite response.")
+    #
+    #     # Join parts with newlines
+    #     return "\n".join(parts)
